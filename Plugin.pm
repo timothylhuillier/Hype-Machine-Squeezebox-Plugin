@@ -25,7 +25,7 @@ my %METADATA_CACHE= {};
 BEGIN {
 	$log = Slim::Utils::Log->addLogCategory({
 		'category'     => 'plugin.hypem',
-		'defaultLevel' => 'WARN',
+		'defaultLevel' => 'ERROR',
 		'description'  => string('PLUGIN_HYPEM'),
 	}); 
 
@@ -196,12 +196,29 @@ sub toplevel {
 
 	$callback->([
 		{ 
-			playall => 1,
+			name => string('PLUGIN_HYPEM_POP_LASTWEEK'),
+			type => 'playlist', 
+		  url  => \&playlistHandler,
+		  passthrough => [ "popular/lastweek" ]
+		},
+		{ 
 			name => string('PLUGIN_HYPEM_POP_NOREMIX'),
 			type => 'playlist', 
 		  url  => \&playlistHandler,
 		  passthrough => [ "popular/noremix" ]
-		}
+		},
+		{ 
+			name => string('PLUGIN_HYPEM_MOST_BLOGGED_ARTISTS'),
+			type => 'playlist', 
+		  url  => \&playlistHandler,
+		  passthrough => [ "popular/artists" ]
+		},
+			{ 
+			name => string('PLUGIN_HYPEM_TWITTER'),
+			type => 'playlist', 
+		  url  => \&playlistHandler,
+		  passthrough => [ "popular/twitter" ]
+		},
 	]);
 }
 
