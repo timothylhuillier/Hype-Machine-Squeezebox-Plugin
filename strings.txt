@@ -1,0 +1,35 @@
+PLUGIN_HYPEM
+	EN	Hype Machine
+
+HYPEM
+	EN	Hype Machine
+
+PLUGIN_HYPEM_DESC
+	EN	Play audio from Hype Machine.
+
+PLUGIN_HYPEM_TOP
+	EN	Top Rated Music
+
+PLUGIN_HYPEM_POP_NOREMIX
+	EN	Most Popular Music (No Remixes)
+
+PLUGIN_HYPEM_POP
+	EN	Most Popular Music
+
+PLUGIN_HYPEM_RECENT
+	EN	Most Recent Music
+
+PLUGIN_HYPEM_FAV
+	EN	Favorite Music
+
+PLUGIN_HYPEM_SEARCH
+	EN	Hype Machine Search
+
+PLUGIN_HYPEM_RECENTLYPLAYED
+	EN	Recently Played
+
+PLUGIN_HYPEM_BANNER
+	EN	Banner
+
+PLUGIN_HYPEM_BANNER_TEXT
+	EN	Hype Machine Plugin
