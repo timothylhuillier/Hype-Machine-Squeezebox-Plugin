@@ -3,7 +3,7 @@
 <extension>
 	<name>PLUGIN_HYPEM</name>
 	<module>Plugins::HypeM::Plugin</module>
-	<version>0.1</version>
+	<version>0.2</version>
 	<description>PLUGIN_HYPEM</description>
 	<icon>http://hypem.com/apple-touch-icon-iphone.png</icon>
 	<defaultState>enabled</defaultState>

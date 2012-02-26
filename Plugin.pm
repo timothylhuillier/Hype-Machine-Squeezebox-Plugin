@@ -228,7 +228,7 @@ sub playlistHandler {
       $callback->({
 	      items  => $menu,
 	      offset => $index,
-	      total  => 50,
+	      total  => scalar(@$menu),
 	    });
 	  }
   )->get($queryUrl);
