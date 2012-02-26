@@ -12,6 +12,8 @@ use URI::Escape;
 use JSON::XS::VersionOneAndTwo;
 use XML::Simple;
 
+use Data::Dumper;
+
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 use Slim::Utils::Errno;
@@ -37,9 +39,9 @@ sub _parseEntry {
     name => $json->{'title'},
     title => $json->{'title'},
     artist => $json->{'artist'},
-    play => $json->{'stream_url_raw'},
+    play => $json->{'stream_pub'},
     #url  => $json->{'permalink_url'},
-    link => $json->{'stream_url_raw'},
+    link => $json->{'stream_pub'},
     icon => $json->{'thumb_url_large'} || "",
     image => $json->{'thumb_url_large'} || "",
     cover => $json->{'thumb_url_large'} || "",

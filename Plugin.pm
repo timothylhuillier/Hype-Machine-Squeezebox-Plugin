@@ -6,6 +6,8 @@ package Plugins::HypeM::Plugin;
 
 use strict;
 
+
+use Data::Dumper;
 use vars qw(@ISA);
 
 use URI::Escape;
@@ -21,8 +23,6 @@ use Plugins::HypeM::ProtocolHandler;
 
 my $log;
 my $compat;
-
-my %METADATA_CACHE= {};
 
 BEGIN {
 	$log = Slim::Utils::Log->addLogCategory({
@@ -94,87 +94,6 @@ sub defaultMeta {
 	};
 }
 
-
-# TODO: make this async
-sub metadata_provider {
-  my ($client, $url) = @_;
-  $log->error($url);
-  if (exists $METADATA_CACHE{$url}) {
-    return $METADATA_CACHE{$url};
-  } elsif ($url =~ /\/([^\/]+)\/[^\/]+.mp3$/) {
-  	$log->error($1);
-    Slim::Utils::Timers::killTimers( $client, \&fetchMetadata );
-    $client->master->pluginData( webapifetchingMeta => 1 );
-
-    fetchMetadata( $client, $url, $1 );
-	  # http://api.hypem.com/serve/f/509/zh3k/4308df2718040bc81992e9cdb60102f1.mp3",
-	  # http://api.hypem.com/playlist/item/zh3k/json/1/data.js
-	}
-  return defaultMeta( $client, $url );
-}
-
-sub _gotMetadata {
-	my $http      = shift;
-	my $client    = $http->params('client');
-	my $url       = $http->params('url');
-	my $content   = $http->content;
-
-
-  if ( $@ ) {
-	  $http->error( $@ );
-	  _gotMetadataError( $http );
-	  return;
-  }
-  
-  my $json = eval { from_json($content) };
-
-  $client->master->pluginData( webapifetchingMeta => 0 );
-
-  my $DATA = _parseEntry($json->{'0'});
-  my $cache = Slim::Utils::Cache->new;
-  $log->info("setting ". 'hypem_meta_' . $json->{mediaid});
-  $cache->set( 'hypem_meta_' . $json->{mediaid}, $DATA, 86400 );
-  $METADATA_CACHE{$DATA->{'play'}} = $DATA;
-
-  return;
-}
-
-sub _gotMetadataError {
-	my $http   = shift;
-	my $client = $http->params('client');
-	my $url    = $http->params('url');
-	my $error  = $http->error;
-
-	$log->is_debug && $log->debug( "Error fetching Web API metadata: $error" );
-
-	$client->master->pluginData( webapifetchingMeta => 0 );
-
-	# To avoid flooding the BBC servers in the case of errors, we just ignore further
-	# metadata for this station if we get an error
-	my $meta = defaultMeta( $client, $url );
-	$meta->{_url} = $url;
-
-	$client->master->pluginData( webapimetadata => $meta );
-}
-
-sub fetchMetadata {
-  my ( $client, $url, $mediaid ) = @_;
-
-  my $queryUrl = "http://api.hypem.com/playlist/item/" . $mediaid . "/json/1/data.js?key=f848bd68fccf9e593a2cf098616a9e43";
-
-  my $http = Slim::Networking::SimpleAsyncHTTP->new(
-    \&_gotMetadata,
-    \&_gotMetadataError,
-    {
-      client     => $client,
-      url        => $url,
-      timeout    => 30,
-    },
-  );
-
-  $http->get($queryUrl);
-}
-
 sub _parseEntry {
 	my $json = shift;
 
@@ -186,7 +105,7 @@ sub _parseEntry {
 	  type => 'audio',
 	  mime => 'audio/mpeg',
 	  play => "hypem://" . $json->{mediaid},
-	  stream_url  => $json->{'stream_url'},
+	  stream_url  => $json->{'stream_pub'},
 	  link => $json->{'posturl'},
 	  icon => $json->{'thumb_url_large'} || "",
 	  image => $json->{'thumb_url_large'} || "",
@@ -197,8 +116,9 @@ sub _parseEntry {
 sub playlistHandler {
 	my ($client, $callback, $args, $path) = @_;
 
-	my $index = ($args->{'index'} || 0); # ie, offset
-	my $page = $index / 20;
+	my $offset = ($args->{'index'} || 0); # ie, offset
+  $log->info($offset);
+	my $page = int($offset / 20) + 1;
 
 	my $queryUrl = "http://api.hypem.com/playlist/" . $path . "/json/" . $page . "/data.js?key=f848bd68fccf9e593a2cf098616a9e43";
 
@@ -212,11 +132,23 @@ sub playlistHandler {
       my $menu = [];
 
 	    my $json = eval { from_json($http->content) };
-	    while ( my ($index, $entry) = each(%$json) ) {
+
+      my @skeys = keys %$json;
+      my @keys;
+      foreach my $k (@skeys) {
+        if ($k=~/\d+/) {
+          push @keys, int($k);
+        }
+      }
+
+      foreach my $index (sort { $a <=> $b } @keys) {
+	      my $entry = $json->{sprintf("%s", $index)};
 	    	if ($index =~ /\d+/) {
+          if (int($index) < $offset) {
+            next;
+          }
 		      my $menuEntry = _parseEntry($entry);
 
-		      $METADATA_CACHE{$menuEntry->{'play'}} = _parseEntry($entry);
           my $cache = Slim::Utils::Cache->new;
           $log->info("setting ". 'hypem_meta_' . $entry->{mediaid});
           $cache->set( 'hypem_meta_' . $entry->{mediaid}, _parseEntry($entry), 86400 );
@@ -227,7 +159,7 @@ sub playlistHandler {
 
       $callback->({
 	      items  => $menu,
-	      offset => $index,
+	      offset => $offset,
 	      total  => scalar(@$menu),
 	    });
 	  }
