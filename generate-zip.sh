@@ -1,8 +1,8 @@
 set -x
 cd ..
-zip -r HypeM HypeM -x \*.zip \*.sh \*.git\* \*README\* \*webauth\*
-mv HypeM.zip HypeM
-cd HypeM
+zip -r Hype\ Machine Hype\ Machine -x \*.zip \*.sh \*.git\* \*README\* \*webauth\*
+mv Hype\ Machine.zip Hype\ Machine
+cd Hype\ Machine
 
 VERSION=$(grep \<version\> install.xml  | perl -n -e '/>(.*)</; print $1;')
 SHA=$(shasum HypeM.zip | awk '{print $1;}')
