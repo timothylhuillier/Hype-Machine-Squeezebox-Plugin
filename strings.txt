@@ -42,3 +42,9 @@ PLUGIN_HYPEM_BANNER
 
 PLUGIN_HYPEM_BANNER_TEXT
 	EN	Hype Machine Plugin
+
+PLUGIN_HYPEM_USERNAME
+	EN	Hype Machine Username
+
+PLUGIN_HYPEM_PASSWORD
+	EN	Hype Machine Password

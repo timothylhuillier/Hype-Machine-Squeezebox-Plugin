@@ -17,6 +17,9 @@ use Slim::Utils::Strings qw(string);
 use Slim::Utils::Prefs;
 use Slim::Utils::Log;
 
+use Plugins::SoundCloud::ProtocolHandler;
+
+
 my $log;
 my $compat;
 
@@ -41,10 +44,9 @@ BEGIN {
 		$compat = 1;
 	}
 }
-
 my $prefs = preferences('plugin.hypem');
 
-$prefs->init({ prefer_lowbitrate => 0, recent => [] });
+$prefs->init({ password => "", username => "" });
 
 tie my %recentlyPlayed, 'Tie::Cache::LRU', 20;
 
@@ -98,10 +100,78 @@ sub defaultMeta {
 # TODO: make this async
 sub metadata_provider {
   my ($client, $url) = @_;
+  $log->error($url);
   if (exists $METADATA_CACHE{$url}) {
     return $METADATA_CACHE{$url};
-  }
+  } elsif ($url =~ /\/([^\/]+)\/[^\/]+.mp3$/) {
+  	$log->error($1);
+    Slim::Utils::Timers::killTimers( $client, \&fetchMetadata );
+    $client->master->pluginData( webapifetchingMeta => 1 );
+
+    fetchMetadata( $client, $url, $1 );
+	  # http://api.hypem.com/serve/f/509/zh3k/4308df2718040bc81992e9cdb60102f1.mp3",
+	  # http://api.hypem.com/playlist/item/zh3k/json/1/data.js
+	}
   return defaultMeta( $client, $url );
+}
+
+sub _gotMetadata {
+	my $http      = shift;
+	my $client    = $http->params('client');
+	my $url       = $http->params('url');
+	my $content   = $http->content;
+
+
+  if ( $@ ) {
+	  $http->error( $@ );
+	  _gotMetadataError( $http );
+	  return;
+  }
+  
+  my $json = eval { from_json($content) };
+
+  $client->master->pluginData( webapifetchingMeta => 0 );
+
+  my $DATA = _parseEntry($json->{'0'});
+  $METADATA_CACHE{$DATA->{'play'}} = $DATA;
+
+  return;
+}
+
+sub _gotMetadataError {
+	my $http   = shift;
+	my $client = $http->params('client');
+	my $url    = $http->params('url');
+	my $error  = $http->error;
+
+	$log->is_debug && $log->debug( "Error fetching Web API metadata: $error" );
+
+	$client->master->pluginData( webapifetchingMeta => 0 );
+
+	# To avoid flooding the BBC servers in the case of errors, we just ignore further
+	# metadata for this station if we get an error
+	my $meta = defaultMeta( $client, $url );
+	$meta->{_url} = $url;
+
+	$client->master->pluginData( webapimetadata => $meta );
+}
+
+sub fetchMetadata {
+  my ( $client, $url, $mediaid ) = @_;
+
+  my $queryUrl = "http://api.hypem.com/playlist/item/" . $mediaid . "/json/1/data.js?key=f848bd68fccf9e593a2cf098616a9e43";
+
+  my $http = Slim::Networking::SimpleAsyncHTTP->new(
+    \&_gotMetadata,
+    \&_gotMetadataError,
+    {
+      client     => $client,
+      url        => $url,
+      timeout    => 30,
+    },
+  );
+
+  $http->get($queryUrl);
 }
 
 sub _parseEntry {
@@ -133,35 +203,6 @@ sub playlistHandler {
 
 	$log->warn("fetching: $queryUrl");
 
-# 0: {
-# mediaid: "1j46f",
-# artist: "Charli XCX",
-# title: ""Valentine"",
-# dateposted: 1330084587,
-# siteid: 1288,
-# sitename: "Faded Glamour",
-# posturl: "http://www.fadedglamour.co.uk/2012/02/ones-to-watch-tips-2012-charli-xcx.html",
-# postid: 1729896,
-# dateposted_first: 1329359575,
-# siteid_first: 15146,
-# sitename_first: "AwkwardSound",
-# posturl_first: "http://www.awkwardsound.com/2012/02/charli-xcx.html",
-# postid_first: 1721694,
-# loved_count: 105,
-# posted_count: 3,
-# stream_url: "http://api.hypem.com/serve/f/509/1j46f/6432e138cdcc7b07ef95e05b5e67e795.mp3",
-# stream_pub: "http://hypem.com/serve/public/1j46f",
-# stream_url_raw: "http://t01a.hypem.com/sec/75fbb829963a73d9ef0435d29a4ac746/4f4959e0/archive/509/17/19502.mp3",
-# stream_url_raw_low: "http://t01a.hypem.com/sec/703e6da7b1b56a89c3a5454f27ace5c9/4f4959e0/squeeze.pl?arg=9&file=17/19502.mp3",
-# stream_url_raw_sample: "http://t01a.hypem.com/sec/83170e90307077c3f789ccda3223d7fa/4f4959e0/sample.pl?arg=9&file=17/19502.mp3",
-# thumb_url: "http://static-ak.hypem.net/images/albumart4.gif",
-# thumb_url_large: "http://static-ak.hypem.net/images/blog_images/1288.jpg",
-# time: 270,
-# description: "Words: Saam Das (unless otherwise stated)  Part two of our bands to watch for the next ten months or so. Or longer? Part three to follow shortly. Part one comprised of Alabama Shakes, Alt-J, and BASTILLE - tipped by Emily Solan, Jack Thomson and myself re",
-# itunes_link: "http://hypem.com/go/itunes_search/Charli%20XCX"
-# },
-use Data::Dumper;
-
 	Slim::Networking::SimpleAsyncHTTP->new(
     sub {
 	    my $http = shift;
@@ -172,9 +213,6 @@ use Data::Dumper;
 	    my $json = eval { from_json($http->content) };
 	    while ( my ($index, $entry) = each(%$json) ) {
 	    	if ($index =~ /\d+/) {
-		      $log->warn(Dumper($entry));
-		      $log->warn(Dumper(_parseEntry($entry)));
-
 		      my $menuEntry = _parseEntry($entry);
 		      $METADATA_CACHE{$menuEntry->{'play'}} = _parseEntry($entry);
 
