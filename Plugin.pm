@@ -17,8 +17,7 @@ use Slim::Utils::Strings qw(string);
 use Slim::Utils::Prefs;
 use Slim::Utils::Log;
 
-use Plugins::SoundCloud::ProtocolHandler;
-
+use Plugins::HypeM::ProtocolHandler;
 
 my $log;
 my $compat;
@@ -28,7 +27,7 @@ my %METADATA_CACHE= {};
 BEGIN {
 	$log = Slim::Utils::Log->addLogCategory({
 		'category'     => 'plugin.hypem',
-		'defaultLevel' => 'ERROR',
+		'defaultLevel' => 'DEBUG',
 		'description'  => string('PLUGIN_HYPEM'),
 	}); 
 
@@ -70,9 +69,8 @@ sub initPlugin {
 		$recentlyPlayed{ $recent->{'url'} } = $recent;
 	}
 
-  Slim::Formats::RemoteMetadata->registerProvider(
-    match => qr/hypem.com/,
-    func => \&metadata_provider,
+  Slim::Player::ProtocolHandlers->registerHandler(
+    hypem => 'Plugins::HypeM::ProtocolHandler'
   );
 
 	Slim::Control::Request::addDispatch(['hypem', 'info'], [1, 1, 1, \&cliInfoQuery]);
@@ -81,7 +79,7 @@ sub initPlugin {
 sub shutdownPlugin {
 	my $class = shift;
 
-	$class->saveRecentlyPlayed('now');
+	# $class->saveRecentlyPlayed('now');
 }
 
 sub getDisplayName { 'PLUGIN_HYPEM' }
@@ -133,6 +131,9 @@ sub _gotMetadata {
   $client->master->pluginData( webapifetchingMeta => 0 );
 
   my $DATA = _parseEntry($json->{'0'});
+  my $cache = Slim::Utils::Cache->new;
+  $log->info("setting ". 'hypem_meta_' . $json->{mediaid});
+  $cache->set( 'hypem_meta_' . $json->{mediaid}, $DATA, 86400 );
   $METADATA_CACHE{$DATA->{'play'}} = $DATA;
 
   return;
@@ -178,14 +179,14 @@ sub _parseEntry {
 	my $json = shift;
 
   my $DATA = {
-	  #duration => $json->{'duration'} / 1000,
+	  duration => int($json->{'time'}),
 	  name => $json->{'title'},
 	  title => $json->{'title'},
 	  artist => $json->{'artist'},
 	  type => 'audio',
 	  mime => 'audio/mpeg',
-	  play => $json->{'stream_url_raw'},
-	  #url  => $json->{'permalink_url'},
+	  play => "hypem://" . $json->{mediaid},
+	  stream_url  => $json->{'stream_url'},
 	  link => $json->{'posturl'},
 	  icon => $json->{'thumb_url_large'} || "",
 	  image => $json->{'thumb_url_large'} || "",
@@ -214,7 +215,11 @@ sub playlistHandler {
 	    while ( my ($index, $entry) = each(%$json) ) {
 	    	if ($index =~ /\d+/) {
 		      my $menuEntry = _parseEntry($entry);
+
 		      $METADATA_CACHE{$menuEntry->{'play'}} = _parseEntry($entry);
+          my $cache = Slim::Utils::Cache->new;
+          $log->info("setting ". 'hypem_meta_' . $entry->{mediaid});
+          $cache->set( 'hypem_meta_' . $entry->{mediaid}, _parseEntry($entry), 86400 );
 
 		      push @$menu, $menuEntry;
 		    }

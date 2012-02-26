@@ -1,0 +1,16 @@
+<extensions>
+<details>
+<title lang="EN">Whizziwig's Plugins</title>
+</details>
+<plugins>
+<plugin name="Hype Machine" version="0.1" minTarget="7.5" maxTarget="*">
+<title lang="EN">Hype Machine</title>
+<desc lang="EN">Browse, search and play urls from soundcloud</desc>
+<url>http://whizziwig.com/static/hypebox/HypeM.zip</url>
+<link>https://github.com/blackmad/Hype-Machine-Squeezebox-Plugin</link>
+<sha>d9f86f4489a14c4b6098baea2b4a91f1c7a69191</sha>
+<creator>David Blackman</creator>
+<email>david+hypebox@whizziwig.com</email>
+</plugin>
+</plugins>
+</extensions>
