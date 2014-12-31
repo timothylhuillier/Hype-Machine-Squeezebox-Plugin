@@ -1,28 +1,37 @@
 set -x
-cd ..
-zip -r HypeM HypeM -x \*.zip \*.sh \*.git\* \*README\* \*webauth\*
-mv HypeM.zip HypeM
-cd HypeM
 
+# recupère la version inscrite dans install.xml avant de changer de dossier
 VERSION=$(grep \<version\> install.xml  | perl -n -e '/>(.*)</; print $1;')
-SHA=$(shasum HypeM.zip | awk '{print $1;}')
 
-cat <<EOF > public.xml
+# créer un dossier temporaire qui va contenir le zip
+mkdir generateTpl
+cd generateTpl
+# télécharge le zip pour le hasher
+wget https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin/archive/master.zip
+# hash le zip et stock la valeur dans la variable 'SHA'
+SHA=$(shasum master.zip | awk '{print $1;}')
+
+# retour dans le dossier parent et supprime le dossier temporaire
+cd ../
+rm -rf generateTpl
+
+# Mets à jour le fichier repo.xml
+cat <<EOF > repo.xml
 <extensions>
-<details>
-<title lang="EN">Whizziwig's Plugins</title>
-</details>
-<plugins>
-<plugin name="HypeM" version="$VERSION" minTarget="7.5" maxTarget="*">
-<title lang="EN">Hype Machine</title>
-<desc lang="EN">Browse, search and play urls from The Hype Machine</desc>
-<url>http://whizziwig.com/static/hypebox/HypeM.zip</url>
-<link>https://github.com/blackmad/Hype-Machine-Squeezebox-Plugin</link>
-<sha>$SHA</sha>
-<creator>David Blackman</creator>
-<email>david+hypebox@whizziwig.com</email>
-</plugin>
-</plugins>
+	<details>
+		<title lang="EN">timothylhuillier's Plugins</title>
+	</details>
+	<plugins>
+		<plugin name="HypeMachine" version="$VERSION" minTarget="7.0" maxTarget="7.*">
+			<title lang="EN">Hype Machine</title>
+			<desc lang="EN">A plugin for the logitech meda server, HypeM is a platform of streamin music.</desc>
+			<url>https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin/archive/master.zip</url>
+			<sha>$SHA</sha>
+			<link>https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin</link>
+			<creator>Timothy L'HUILLIER</creator>
+			<email>timothylhuillier@gmail.com</email>
+		</plugin>
+	</plugins>
 </extensions>
 EOF
 
