@@ -8,8 +8,8 @@
 		<plugin name="HypeM" version="0.1" minTarget="7.0" maxTarget="7.*">
 			<title lang="EN">Hype Machine</title>
 			<desc lang="EN">A plugin for the logitech meda server, HypeM is a platform of streamin music.</desc>
-			<url>https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin/archive/master.zip</url>
-			<sha>80c582ba92d2481ebb6b17f8e12d035c567e4cde</sha>
+			<url>http://paperops.fr/lms/hypem.zip</url>
+			<sha>35c8e09e3a7de930fc236cefd048a4825687d50d</sha>
 			<link>https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin</link>
 			<creator>David BLACKMAN and Timothy L'HUILLIER</creator>
 			<email>timothylhuillier@gmail.com</email>

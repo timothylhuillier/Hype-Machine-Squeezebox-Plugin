@@ -27,7 +27,7 @@ cat <<EOF > repo.xml
 		<plugin name="HypeM" version="$VERSION" minTarget="7.0" maxTarget="7.*">
 			<title lang="EN">Hype Machine</title>
 			<desc lang="EN">A plugin for the logitech meda server, HypeM is a platform of streamin music.</desc>
-			<url>https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin/archive/master.zip</url>
+			<url>http://paperops.fr/lms/hypem.zip</url>
 			<sha>$SHA</sha>
 			<link>https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin</link>
 			<creator>David BLACKMAN and Timothy L'HUILLIER</creator>
