@@ -5,7 +5,8 @@
 	<module>Plugins::HypeM::Plugin</module>
 	<version>0.1</version>
 	<description>PLUGIN_HYPEM</description>
-	<icon>assets/images/hypem_logo.png</icon>
+	<icon>plugins/HypeM/assets/images/hypem_logo.png</icon>
+	<optionsURL>plugins/HypeM/settings/basic.html</optionsURL>
 	<defaultState>enabled</defaultState>
 	<targetApplication>
 		<id>SlimServer</id>
