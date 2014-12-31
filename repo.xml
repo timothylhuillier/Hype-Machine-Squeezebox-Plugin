@@ -5,11 +5,11 @@
 		<title lang="EN">timothylhuillier's Plugins</title>
 	</details>
 	<plugins>
-		<plugin name="HypeM" version="0.1" minTarget="7.0" maxTarget="7.*">
+		<plugin name="HypeM" version="0.1" minTarget="7.5" maxTarget="7.*">
 			<title lang="EN">Hype Machine</title>
 			<desc lang="EN">A plugin for the logitech meda server, HypeM is a platform of streamin music.</desc>
-			<url>http://paperops.fr/lms/hypem.zip</url>
-			<sha>8846c19ac01e46dc5fea6c5e80a6b5da08cce384</sha>
+			<url>http://paperops.fr/lms/HypeM-0.1.zip</url>
+			<sha>f9fea038de95b21cf5184704502ceb50095f5051</sha>
 			<link>https://github.com/timothylhuillier/Hype-Machine-Squeezebox-Plugin</link>
 			<creator>David BLACKMAN and Timothy L'HUILLIER</creator>
 			<email>timothylhuillier@gmail.com</email>
