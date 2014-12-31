@@ -17,6 +17,8 @@ rm -rf generateTpl
 
 # Mets à jour le fichier repo.xml
 cat <<EOF > repo.xml
+<?xml version="1.0"?>
+
 <extensions>
 	<details>
 		<title lang="EN">timothylhuillier's Plugins</title>
