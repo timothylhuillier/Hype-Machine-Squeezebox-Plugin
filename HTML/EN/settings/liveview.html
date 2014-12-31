@@ -1,0 +1,59 @@
+[%- IF !ajaxUpdate %]
+[% pagetitle = 'PLUGIN_SUGARCUBELV' | string; pageicon = 'PLUGIN_SUGARCUBELV' %]
+[%- pwd_list = BLOCK -%]/
+	<a href="[% webroot %][% path %]?player=[% player | uri %][% statisticparameters %]">
+		[% "PLUGIN_SUGARCUBELV" | string %]
+	</a>
+
+[% END -%]
+[%- pageHeaderInfo = BLOCK %]
+
+[% END -%]
+[% PROCESS pageheader.html %]
+[% END %]		
+[% IF refresh > 0 %] 
+	<SCRIPT>
+	<!--
+	setTimeout("myReload()", [% refresh %] * [% refreshRate %]);
+
+	function myReload() {
+	  location.replace("[% webroot %][% path %]?player=[% player | uri %][% statisticparameters %]");
+	}
+	-->
+	</SCRIPT>
+[% END %]
+		<script type="text/javascript">
+			for (var i=0; i < parent.frames.length; i++) {
+				if (parent.frames[i].name == "status") {
+					parent.frames[i].location.replace(parent.frames[i].location.pathname + "?player=[% player | uri %]&amp;refresh=1");
+				}
+			}
+		</script>	
+	<table border=0 cellspacing=8 cellpadding=8>
+	<TR><TD>[% WRAPPER settingGroup title="PLUGIN_SUGARCUBE_STATS" %]</TD><TD align=right>[% sugarcube_stats_mip_status %][% END %]</TD></TR>
+	<TR><TD colspan=2>Spicefly SugarCube has queued up [% sugarcube_trackcount %] tracks, including [% sugarcube_randomcount %] random tracks.  [% sugarcube_randomcountpercentage %] of the total.</TD></TR>
+	<TR><TD colspan=2>Random Track Last Chosen; [% sugarcube_randomtrack %] - [% sugarcube_stats_random_time %]</TD></TR>
+	<TR><TD colspan=2>[% master %]</TD></TR>
+	<TR><TD colspan=2>[% mixstatus %]</TD></TR>
+	</table>
+	[% IF track != '' %]
+	<HR>
+	<TABLE border=0 cellspacing=2 cellpadding=3>
+	<TR><TD rowspan=6><img width="[% size %]" height="[% size %]" src="[% webroot %]music/[% currentalbumart %]/cover_[% size %]x[% size %]_o.jpg"></a></TD><TD colspan=5>&nbsp;</TD><TD rowspan=6><img width="[% size %]" height="[% size %]" src="[% webroot %]music/[% comingupnextalbumart %]/cover_[% size %]x[% size %]_o.jpg"></a></TD><TD>&nbsp;</TD></TR>
+	<TR><TD>&nbsp;</TD><TD><B>Currently Playing</B></TD><TD colspan=3>&nbsp;</TD><TD><B>Coming Up Next</B></TD></TR>
+	<TR><TD>&nbsp;</TD><TD>[% currenttrack %]</TD><TD colspan=3>&nbsp;</TD><TD>[% comingupnexttrack %]</TD></TR>	
+	<TR><TD>&nbsp;</TD><TD>[% currentalbum %]</TD><TD colspan=3>&nbsp;</TD><TD>[% comingupnextalbum %]</TD></TR>
+	<TR><TD>&nbsp;</TD><TD>[% currentartist %]</TD><TD colspan=3>&nbsp;</TD><TD>[% comingupnextartist %]</TD></TR>
+	<TR><TD>&nbsp;</TD><TD>[% currentgenre %]</TD><TD colspan=3>&nbsp;</TD><TD>[% comingupnextgenre %]</TD></TR>
+	</TABLE>
+
+	<HR>
+	[% WRAPPER settingGroup title= mode %][% END %]
+	<TABLE border=0 cellspacing=2 cellpadding=3>
+		[% filters %]
+	</TABLE>	
+	<P><BR>&nbsp;</BR></P>
+	[% END %]	
+[%- IF !ajaxUpdate %]
+[% PROCESS pagefooter.html %]
+[% END %]

@@ -5,7 +5,7 @@
 	<module>Plugins::HypeM::Plugin</module>
 	<version>0.1</version>
 	<description>PLUGIN_HYPEM</description>
-	<icon>http://hypem.com/apple-touch-icon-iphone.png</icon>
+	<icon>assets/images/hypem_logo.png</icon>
 	<defaultState>enabled</defaultState>
 	<targetApplication>
 		<id>SlimServer</id>
