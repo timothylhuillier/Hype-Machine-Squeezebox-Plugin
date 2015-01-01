@@ -31,21 +31,21 @@ use strict;
 use base 'Slim::Player::Protocols::HTTP';
 
 sub _parseEntry {
-  my $json = shift;
+    my $json = shift;
 
-  my $DATA = {
-    duration => int($json->{'time'}),
-    mediaid => $json->{'mediaid'},
-    name => $json->{'title'},
-    title => $json->{'title'},
-    artist => $json->{'artist'},
-    play => $json->{'stream_pub'},
-    #url  => $json->{'permalink_url'},
-    link => $json->{'stream_pub'},
-    icon => $json->{'thumb_url_large'} || "",
-    image => $json->{'thumb_url_large'} || "",
-    cover => $json->{'thumb_url_large'} || "",
-  };
+    my $DATA = {
+        duration => int($json->{'time'}),
+        mediaid => $json->{'mediaid'},
+        name => $json->{'title'},
+        title => $json->{'title'},
+        artist => $json->{'artist'},
+        play => $json->{'stream_pub'},
+        #url  => $json->{'permalink_url'},
+        link => $json->{'stream_pub'},
+        icon => $json->{'thumb_url_large'} || "",
+        image => $json->{'thumb_url_large'} || "",
+        cover => $json->{'thumb_url_large'} || "",
+    };
 }
 
 sub canSeek { 1 }
@@ -55,264 +55,265 @@ sub getFormatForURL () { 'mp3' }
 sub isRemote { 1 }
 
 sub scanUrl {
-  my ($class, $url, $args) = @_;
-  $args->{cb}->( $args->{song}->currentTrack() );
+    my ($class, $url, $args) = @_;
+    $args->{cb}->( $args->{song}->currentTrack() );
 }
 
 sub getNextTrack {
-  my ($class, $song, $successCb, $errorCb) = @_;
-  
-  my $client = $song->master();
-  my $url    = $song->currentTrack()->url;
-  
-  # Get next track
-  my ($id) = $url =~ m{^hypem://(.*)$};
+    my ($class, $song, $successCb, $errorCb) = @_;
+    
+    my $client = $song->master();
+    my $url    = $song->currentTrack()->url;
+    
+    # Get next track
+    my ($id) = $url =~ m{^hypem://(.*)$};
 
-  my $cache = Slim::Utils::Cache->new;
-  my $meta      = $cache->get( 'hypem_meta_' . $id );
+    my $cache = Slim::Utils::Cache->new;
+    my $meta      = $cache->get( 'hypem_meta_' . $id );
 
-  if ($meta) {
-    gotNextTrackHelper($successCb, $errorCb, $client, $song, $meta);
-    return;
-  }
+    if ($meta) {
+        gotNextTrackHelper($successCb, $errorCb, $client, $song, $meta);
+        return;
+    }
 
-  # Talk to SN and get the next track to play
+    # Talk to SN and get the next track to play
 #     pecific Track Metadata (returns 1 item)
 # http://api.hypem.com/playlist/item/1ad2j/json/1/data.js
 # Arbitrarily-constructed list of tracks
 # http://api.hypem.com/playlist/set/1ad2j,1ahkc/json/1/data.js
-  my $trackURL = addClientId("http://api.hypem.com/playlist/item/" . $id . "/json/1/data.js");
-  
-  my $http = Slim::Networking::SimpleAsyncHTTP->new(
-          \&gotNextTrack,
-          \&gotNextTrackError,
-          {
-                  client        => $client,
-                  song          => $song,
-                  callback      => $successCb,
-                  errorCallback => $errorCb,
-                  timeout       => 35,
-          },
-  );
-  
-  main::DEBUGLOG && $log->is_debug && $log->debug("Getting track from hypem for $id");
-  
-  $http->get( $trackURL );
+    my $trackURL = addClientId("http://api.hypem.com/playlist/item/" . $id . "/json/1/data.js");
+    
+    my $http = Slim::Networking::SimpleAsyncHTTP->new(
+        \&gotNextTrack,
+        \&gotNextTrackError,
+        {
+            client        => $client,
+            song          => $song,
+            callback      => $successCb,
+            errorCallback => $errorCb,
+            timeout       => 35,
+        },
+    );
+    
+    main::DEBUGLOG && $log->is_debug && $log->debug("Getting track from hypem for $id");
+    
+    $http->get( $trackURL );
 }
 
 sub gotNextTrack {
-  my $http   = shift;
-  my $client = $http->params->{client};
-  my $song   = $http->params->{song};     
-  my $track  = eval { from_json( $http->content ) };
-  my $meta = _parseEntry($track);
+    my $http   = shift;
+    my $client = $http->params->{client};
+    my $song   = $http->params->{song};     
+    my $track  = eval { from_json( $http->content ) };
+    my $meta = _parseEntry($track);
 
-  my $cache = Slim::Utils::Cache->new;
-  $log->info("setting ". 'hypme__meta_' . $track->{mediaid});
-  $cache->set( 'hypem_meta_' . $track->{mediaid}, $meta, 86400 );
+    my $cache = Slim::Utils::Cache->new;
+    $log->info("setting ". 'hypme__meta_' . $track->{mediaid});
+    $cache->set( 'hypem_meta_' . $track->{mediaid}, $meta, 86400 );
 
-  gotNextTrackHelper($http->params->{callback},
-    $http->params->{'errorCallback'}, $client, $song, $meta)
+    gotNextTrackHelper(
+        $http->params->{callback},
+        $http->params->{'errorCallback'}, $client, $song, $meta)
 }
 
 sub gotNextTrackHelper {
-  my $callback   = shift;
-  my $errorCallback = shift;
-  my $client = shift;
-  my $song   = shift;
-  my $meta  = shift;
+    my $callback   = shift;
+    my $errorCallback = shift;
+    my $client = shift;
+    my $song   = shift;
+    my $meta  = shift;
 
-  # if ( $@ || $track->{error} ) {
-  #   # We didn't get the next track to play
-  #   if ( $log->is_warn ) {
-  #     $log->warn( 'hypem error getting next track: ' . ( $@ || $track->{error} ) );
-  #   }
-    
-  #   if ( $client->playingSong() ) {
-  #     $client->playingSong()->pluginData( {
-  #         songName => $@ || $track->{error},
-  #     } );
-  #   }
-    
-  #   $errorCallback->( 'PLUGIN_HYPEM_NO_INFO', $track->{error} );
-  #   return;
-  # }
+    # if ( $@ || $track->{error} ) {
+    #   # We didn't get the next track to play
+    #   if ( $log->is_warn ) {
+    #     $log->warn( 'hypem error getting next track: ' . ( $@ || $track->{error} ) );
+    #   }
+        
+    #   if ( $client->playingSong() ) {
+    #     $client->playingSong()->pluginData( {
+    #         songName => $@ || $track->{error},
+    #     } );
+    #   }
+        
+    #   $errorCallback->( 'PLUGIN_HYPEM_NO_INFO', $track->{error} );
+    #   return;
+    # }
 
-  # Save metadata for this track
-  $song->pluginData( $meta );
+    # Save metadata for this track
+    $song->pluginData( $meta );
 
-  $log->info($meta->{stream_url});
-  $song->streamUrl($meta->{stream_url});
-  $song->duration( $meta->{duration} );
+    $log->info($meta->{stream_url});
+    $song->streamUrl($meta->{stream_url});
+    $song->duration( $meta->{duration} );
 
-  $callback->();
+    $callback->();
 }
 
 sub gotNextTrackError {
-  my $http = shift;
-  
-  $http->params->{errorCallback}->( 'PLUGIN_SOUNDCLOUD_ERROR', $http->error );
+    my $http = shift;
+    
+    $http->params->{errorCallback}->( 'PLUGIN_SOUNDCLOUD_ERROR', $http->error );
 }
 
 # To support remote streaming (synced players, slimp3/SB1), we need to subclass Protocols::HTTP
 sub new {
-  my $class  = shift;
-  my $args   = shift;
+    my $class  = shift;
+    my $args   = shift;
 
-  my $client = $args->{client};
-  
-  my $song      = $args->{song};
-  my $streamUrl = $song->streamUrl() || return;
-  my $track     = $song->pluginData();
-  
-  $log->info( 'Remote streaming hypem track: ' . $streamUrl );
+    my $client = $args->{client};
+    
+    my $song      = $args->{song};
+    my $streamUrl = $song->streamUrl() || return;
+    my $track     = $song->pluginData();
+    
+    $log->info( 'Remote streaming hypem track: ' . $streamUrl );
 
-  my $sock = $class->SUPER::new( {
-    url     => $streamUrl,
-    song    => $song,
-    client  => $client,
-  } ) || return;
-  
-  ${*$sock}{contentType} = 'audio/mpeg';
+    my $sock = $class->SUPER::new( {
+        url     => $streamUrl,
+        song    => $song,
+        client  => $client,
+    } ) || return;
+    
+    ${*$sock}{contentType} = 'audio/mpeg';
 
-  return $sock;
+    return $sock;
 }
 
 
 # Track Info menu
 sub trackInfo {
-  my ( $class, $client, $track ) = @_;
-  
-  my $url = $track->url;
-  $log->info("trackInfo: " . $url);
+    my ( $class, $client, $track ) = @_;
+    
+    my $url = $track->url;
+    $log->info("trackInfo: " . $url);
 }
 
 # Track Info menu
 sub trackInfoURL {
-  my ( $class, $client, $url ) = @_;
-  $log->info("trackInfoURL: " . $url);
+    my ( $class, $client, $url ) = @_;
+    $log->info("trackInfoURL: " . $url);
 }
 
 use Data::Dumper;
 # Metadata for a URL, used by CLI/JSON clients
 sub getMetadataFor {
-  my ( $class, $client, $url ) = @_;
-    
-  return {} unless $url;
+    my ( $class, $client, $url ) = @_;
+        
+    return {} unless $url;
 
-  #$log->info("metadata: " . $url);
+    #$log->info("metadata: " . $url);
 
-  my $icon = $class->getIcon();
-  my $cache = Slim::Utils::Cache->new;
+    my $icon = $class->getIcon();
+    my $cache = Slim::Utils::Cache->new;
 
-	# If metadata is not here, fetch it so the next poll will include the data
-	my ($trackId) = $url =~ m{hypem://(.+)};
-	#$log->info("looking for  ". 'soundcloud_meta_' . $trackId );
-	my $meta      = $cache->get( 'hypem_meta_' . $trackId );
+    # If metadata is not here, fetch it so the next poll will include the data
+    my ($trackId) = $url =~ m{hypem://(.+)};
+    #$log->info("looking for  ". 'soundcloud_meta_' . $trackId );
+    my $meta      = $cache->get( 'hypem_meta_' . $trackId );
 
-	if ( !$meta && !$client->master->pluginData('fetchingMeta') ) {
-    # Go fetch metadata for all tracks on the playlist without metadata
-    my @need;
-    
-    for my $track ( @{ Slim::Player::Playlist::playList($client) } ) {
-	    my $trackURL = blessed($track) ? $track->url : $track;
-	    if ( $trackURL =~ m{hypem://(.+)} ) {
-        my $id = $1;
-        if ( !$cache->get("hypem_meta_$id") ) {
-          push @need, $id;
+    if ( !$meta && !$client->master->pluginData('fetchingMeta') ) {
+        # Go fetch metadata for all tracks on the playlist without metadata
+        my @need;
+        
+        for my $track ( @{ Slim::Player::Playlist::playList($client) } ) {
+            my $trackURL = blessed($track) ? $track->url : $track;
+            if ( $trackURL =~ m{hypem://(.+)} ) {
+                my $id = $1;
+                if ( !$cache->get("hypem_meta_$id") ) {
+                    push @need, $id;
+                }
+            }
         }
-	    }
-    }
-    
-    if ( main::DEBUGLOG && $log->is_debug ) {
-      $log->debug( "Need to fetch metadata for: " . join( ', ', @need ) );
-    }
-    
-    $client->master->pluginData( fetchingMeta => 1 );
+        
+        if ( main::DEBUGLOG && $log->is_debug ) {
+            $log->debug( "Need to fetch metadata for: " . join( ', ', @need ) );
+        }
+        
+        $client->master->pluginData( fetchingMeta => 1 );
 
-    # http://api.hypem.com/playlist/set/1ad2j,1ahkc/json/1/data.js
+        # http://api.hypem.com/playlist/set/1ad2j,1ahkc/json/1/data.js
 
-    
-    my $metaUrl = Slim::Networking::SqueezeNetwork->url(
+        
+        my $metaUrl = Slim::Networking::SqueezeNetwork->url(
             "/api/classical/v1/playback/getBulkMetadata"
-    );
+        );
 
-    my $queryUrl = "http://api.hypem.com/playlist/set/" . join( ', ', @need ) . "/json/data.js?key=f848bd68fccf9e593a2cf098616a9e43";
+        my $queryUrl = "http://api.hypem.com/playlist/set/" . join( ', ', @need ) . "/json/data.js?key=f848bd68fccf9e593a2cf098616a9e43";
 
-  $log->warn("fetching: $queryUrl");
+    $log->warn("fetching: $queryUrl");
 
-    Slim::Networking::SimpleAsyncHTTP->new(
-      \&_gotBulkMetadata,
-      \&_gotBulkMetadataError,
-      {
-        client  => $client,
-        timeout => 60,
-      },
-    )->get($queryUrl);
-	}
+        Slim::Networking::SimpleAsyncHTTP->new(
+            \&_gotBulkMetadata,
+            \&_gotBulkMetadataError,
+            {
+                client  => $client,
+                timeout => 60,
+            },
+        )->get($queryUrl);
+    }
 
-	#$log->debug( "Returning metadata for: $url" . ($meta ? '' : ': default') );
+    #$log->debug( "Returning metadata for: $url" . ($meta ? '' : ': default') );
 
-	return $meta || {
-	        type      => 'MP3 (Hype Machine)',
-	        icon      => $icon,
-	        cover     => $icon,
-	};
+    return $meta || {
+        type      => 'MP3 (Hype Machine)',
+        icon      => $icon,
+        cover     => $icon,
+    };
 }
 
 sub _gotBulkMetadata {
-  my $http   = shift;
-  my $client = $http->params->{client};
-  
-  $client->master->pluginData( fetchingMeta => 0 );
-  
-  my $json = eval { from_json( $http->content ) };
-          
-  # Cache metadata
-  my $cache = Slim::Utils::Cache->new;
-  my $icon  = Slim::Plugin::HypeM::Plugin->_pluginDataFor('icon');
+    my $http   = shift;
+    my $client = $http->params->{client};
+    
+    $client->master->pluginData( fetchingMeta => 0 );
+    
+    my $json = eval { from_json( $http->content ) };
+                    
+    # Cache metadata
+    my $cache = Slim::Utils::Cache->new;
+    my $icon  = Slim::Plugin::HypeM::Plugin->_pluginDataFor('icon');
 
-  while ( my ($index, $entry) = each(%$json) ) {
-    if ($index =~ /\d+/) {
-      my $menuEntry = _parseEntry($entry);
+    while ( my ($index, $entry) = each(%$json) ) {
+        if ($index =~ /\d+/) {
+            my $menuEntry = _parseEntry($entry);
 
-      my $cache = Slim::Utils::Cache->new;
-      $log->info("setting ". 'hypem_meta_' . $entry->{mediaid});
-      $cache->set( 'hypem_meta_' . $entry->{mediaid}, _parseEntry($entry), 86400 );
+            my $cache = Slim::Utils::Cache->new;
+            $log->info("setting ". 'hypem_meta_' . $entry->{mediaid});
+            $cache->set( 'hypem_meta_' . $entry->{mediaid}, _parseEntry($entry), 86400 );
+        }
     }
-  }
 
-  # Update the playlist time so the web will refresh, etc
-  $client->currentPlaylistUpdateTime( Time::HiRes::time() );
-  
-  Slim::Control::Request::notifyFromArray( $client, [ 'newmetadata' ] );        
+    # Update the playlist time so the web will refresh, etc
+    $client->currentPlaylistUpdateTime( Time::HiRes::time() );
+    
+    Slim::Control::Request::notifyFromArray( $client, [ 'newmetadata' ] );        
 }
 
 sub _gotBulkMetadataError {
-  my $http   = shift;
-  my $client = $http->params('client');
-  my $error  = $http->error;
-  
-  $client->master->pluginData( fetchingMeta => 0 );
-  
-  $log->warn("Error getting track metadata from SN: $error");
+    my $http   = shift;
+    my $client = $http->params('client');
+    my $error  = $http->error;
+    
+    $client->master->pluginData( fetchingMeta => 0 );
+    
+    $log->warn("Error getting track metadata from SN: $error");
 }
 
 sub canDirectStreamSong {
-  my ( $class, $client, $song ) = @_;
-  
-  # We need to check with the base class (HTTP) to see if we
-  # are synced or if the user has set mp3StreamingMethod
-	return $class->SUPER::canDirectStream( $client, $song->streamUrl(), $class->getFormatForURL() );
+    my ( $class, $client, $song ) = @_;
+    
+    # We need to check with the base class (HTTP) to see if we
+    # are synced or if the user has set mp3StreamingMethod
+    return $class->SUPER::canDirectStream( $client, $song->streamUrl(), $class->getFormatForURL() );
 }
 
 # If an audio stream fails, keep playing
 sub handleDirectError {
-  my ( $class, $client, $url, $response, $status_line ) = @_;
-  
-  main::INFOLOG && $log->info("Direct stream failed: $url [$response] $status_line");
-  
-  $client->controller()->playerStreamingFailed( $client, 'PLUGIN_CLASSICAL_STREAM_FAILED' );
+    my ( $class, $client, $url, $response, $status_line ) = @_;
+    
+    main::INFOLOG && $log->info("Direct stream failed: $url [$response] $status_line");
+    
+    $client->controller()->playerStreamingFailed( $client, 'PLUGIN_CLASSICAL_STREAM_FAILED' );
 }
 
 1;
